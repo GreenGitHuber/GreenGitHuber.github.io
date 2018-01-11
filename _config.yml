@@ -1,17 +1,17 @@
 # Site settings
-title: 赵小政 | blog 
-SEOTitle: 赵小政的博客 | Blog
+title: 姜小云 | blog 
+SEOTitle: 姜小云的博客 | Blog
 header-img: img/post-bg-desk.jpg
-email: zhaozheng_tju@163.com
+email: 921681087@qq.com
 description: "Every failure is leading towards success."
-keyword: "github,zhaozhengcoder,blog"
-url: "http://zhaozhengcoder.github.io"          # your host, for absolute URL
+keyword: "github,GreenGitHuber,blog"
+url: "http://GreenGitHuber.github.io"          # your host, for absolute URL
 baseurl: ""      # for example, '/blog' if your blog hosted on 'host/blog'
-github_repo: "https://github.com/zhaozhengcoder/zhaozhengcoder.github.io.git" # you code repository
+github_repo: "https://github.com/GreenGitHuber/GreenGitHuber.github.io.git" # you code repository
 
 # Sidebar settings
 sidebar: true                           # whether or not using Sidebar.
-sidebar-about-description: "Goals determine what you going to be!"
+sidebar-about-description: "I am 小仙女"
 sidebar-avatar: /img/about-BY-gentle.jpg      # use absolute URL, seeing it's used in both `/` and `/about/`
 
 
@@ -20,9 +20,9 @@ sidebar-avatar: /img/about-BY-gentle.jpg      # use absolute URL, seeing it's us
 RSS: false
 # weibo_username:     qiubaiying
 # zhihu_username:     zhao-xiao-zheng-99
-github_username:    zhaozhengcoder
+github_username:    GreenGitHuber
 #facebook_username:  baiying.qiu.7
-jianshu_username:   8530ab416e50
+jianshu_username:   45bc00c5cff5
 #twitter_username:   qiubaiying
 
 
