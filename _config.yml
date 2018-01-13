@@ -12,7 +12,7 @@ github_repo: "https://github.com/GreenGitHuber/GreenGitHuber.github.io.git" # yo
 # Sidebar settings
 sidebar: true                           # whether or not using Sidebar.
 sidebar-about-description: "可我还是小仙女啊 ! "
-sidebar-avatar: /img/about-BY-gentle.jpg      # use absolute URL, seeing it's used in both `/` and `/about/`
+sidebar-avatar: /img/WechatIMG55.jpeg      # use absolute URL, seeing it's used in both `/` and `/about/`
 
 
 
@@ -64,9 +64,9 @@ gitalk:
   enable: true    #是否开启Gitalk评论
   clientID: f2c84e7629bb1446c1a4   #生成的clientID
   clientSecret: ca6d6139d1e1b8c43f8b2e19492ddcac8b322d0d  #同上
-  repo: zhaozhengcoder.github.io    #仓库名称
-  owner: zhaozhengcoder    #github用户名
-  admin: zhaozhengcoder
+  repo: GreenGitHuber.github.io    #仓库名称
+  owner: 姜子牙的鱼儿    #github用户名
+  admin: 姜子牙的鱼儿
   distractionFreeMode: true #是否启用类似FB的阴影遮罩
 
 
