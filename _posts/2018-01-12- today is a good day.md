@@ -1,20 +1,20 @@
 ---
 layout:     post
-title:      today is a good day !
+title:      爬虫日记2-下载图片
 subtitle:  
 date:       2018-01-12
-author:     xiaoyun
+author:     Jasmine
 header-img: img/post-bg-universe.jpg
 catalog: true
 tags:
-    - others
+    - python
 ---
 
 
 上一篇文章，我有了自己的第一条爬虫。就像打怪升级一样，爬虫也会慢慢地成长，学到新本领。今天，我的爬虫就学会了爬取“美图”。这个功能也很有用，可以爬取网上的壁纸，美女图片，正太，帅哥偶像，都是妥妥的。好啦，开始我们的“爬图”之旅吧。
 
 动手写代码之前，我觉得还是要先理一下思路，而不是一开始就噼里啪啦写代码，这是一大禁忌。
-#####目标：爬取网上的图片
+##### 目标：爬取网上的图片
 * 首先，我们要知道去哪里找到图片，也就是URL是什么。
 具体来说，今天我就想爬取一下国家地理中文网上的图片。所以我的爬虫开始的起点是“www.nationalgeographic.com.cn”。可以使用requests库打开网页,并下载网页内容：
 ```
@@ -30,7 +30,7 @@ soup = BeautifulSoup(html,'lxml')
 ```
 可是虽然我们把网页做成汤汁了，但是我们要找的图片在这碗汤的哪里呢？为了快速找到我们的照片，我们可以打开浏览器，查看网页的源码，就像这样：
 ![屏幕快照](http://upload-images.jianshu.io/upload_images/2730963-a23f4e68d400c8cf.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
-![屏幕快照.png](http://upload-images.jianshu.io/upload_images/2730963-a331a4a527a174e2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)具体来说，下载图片的链接在这个标签里：![屏幕快照.png](http://upload-images.jianshu.io/upload_images/2730963-3c90f4ef27dd2181.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)是在<dl class = "show-list-dl aside-box">这一标签下的<img src="*****">里。知道大概的位置，我们就可以用正则表达式和BeautifulSoup来找到这个链接：
+![屏幕快照.png](http://upload-images.jianshu.io/upload_images/2730963-a331a4a527a174e2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)具体来说，下载图片的链接在这个标签里：![屏幕快照.png](http://upload-images.jianshu.io/upload_images/2730963-3c90f4ef27dd2181.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)是在<dl class = "show-list-dl aside-box">这一标签下的img标签里。知道大概的位置，我们就可以用正则表达式和BeautifulSoup来找到这个链接：
 ```
 img_ul = soup.find_all('dl',{'class':'show-list-dl aside-box'})
 for ul in img_ul:
