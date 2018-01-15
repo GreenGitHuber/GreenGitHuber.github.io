@@ -65,8 +65,8 @@ gitalk:
   clientID: f2c84e7629bb1446c1a4   #生成的clientID
   clientSecret: ca6d6139d1e1b8c43f8b2e19492ddcac8b322d0d  #同上
   repo: GreenGitHuber.github.io    #仓库名称
-  owner: 姜子牙的鱼儿    #github用户名
-  admin: 姜子牙的鱼儿
+  owner: 姜子牙的鱼   #github用户名
+  admin: 姜子牙的鱼
   distractionFreeMode: true #是否启用类似FB的阴影遮罩
 
 

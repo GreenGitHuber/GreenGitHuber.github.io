@@ -1,58 +1,191 @@
 ---
 layout:     post
-title:      爬虫日记2-下载图片
+title:      爬虫日记2-加速爬虫速度
 subtitle:  
-date:       2018-01-12
+date:       2018-01-14
 author:     Jasmine
-header-img: img/post-bg-universe.jpg
+header-img: img/post-bg-2015.jpg
 catalog: true
 tags:
     - python
 ---
 
 
-上一篇文章，我有了自己的第一条爬虫。就像打怪升级一样，爬虫也会慢慢地成长，学到新本领。今天，我的爬虫就学会了爬取“美图”。这个功能也很有用，可以爬取网上的壁纸，美女图片，正太，帅哥偶像，都是妥妥的。好啦，开始我们的“爬图”之旅吧。
-
-动手写代码之前，我觉得还是要先理一下思路，而不是一开始就噼里啪啦写代码，这是一大禁忌。
-##### 目标：爬取网上的图片
-* 首先，我们要知道去哪里找到图片，也就是URL是什么。
-具体来说，今天我就想爬取一下国家地理中文网上的图片。所以我的爬虫开始的起点是“www.nationalgeographic.com.cn”。可以使用requests库打开网页,并下载网页内容：
+这篇文章的**主要内容**是，分享两种加快爬虫速度的方法。一个是多进程分布式的爬虫，一个是异步加载的爬虫。
+##### 分布式爬虫
+我们可以利用python里的multiprocessing（多进程）和threading（多线程）实现简单的分布式爬虫。
+它的原理就是：一般我们的程序都是单线程跑的, 也就是说程序当中的指令是一条条处理的, 执行完一条指令才能跳到下一条. 但在我们爬虫的程序中这样的方式有一个问题，就是大量的时间花费在下载网页上。所以如果下载一部分网页的时候就开始分析另一部分网页了， 又或者, 我们能同时下载多个网页, 同时分析多个网页, 这样就有种事倍功半的效用。分布式爬虫的体系有很多种, 处理优化的问题也是多样的. 这里有[一篇博客](http://bittiger.blogspot.com.au/2016/02/blog-post_3.html)可以当做扩展阅读, 来了解当今比较流行的分布式爬虫框架。
+我是用了莫烦的思路：同时下载多个网页, 同时分析多个网页。大概的框架是这样的：![image](http://upload-images.jianshu.io/upload_images/2730963-36dec73143edde79.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+根据图，我们知道，爬虫分为两个步骤：第一步是打开网页，第二步就是解析网页的内容；
+之前在[爬虫成长日记-爬取图片](https://www.jianshu.com/p/52e044cdd4b8)里大概已经介绍过如何打开网页，并利用BeautifulSoup来解析网页了，这里就不赘述了。
 ```
-import requests
-URL = "http://www.nationalgeographic.com.cn/index.php?m=content&c=index&a=lists&catid=596"
-html = requests.get(URL).text
+#打开网页
+def crawl(url):
+    html = urlopen(url).read().decode('utf-8')
+    return html
 ```
-
-* 解析网页内容
-这里我们又要利用这个神奇的工具BeautifulSoup了。它可以把下载下来的网页做成一碗美味的"汤汁"：
- ```
-soup = BeautifulSoup(html,'lxml')
 ```
-可是虽然我们把网页做成汤汁了，但是我们要找的图片在这碗汤的哪里呢？为了快速找到我们的照片，我们可以打开浏览器，查看网页的源码，就像这样：
-![屏幕快照](http://upload-images.jianshu.io/upload_images/2730963-a23f4e68d400c8cf.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
-![屏幕快照.png](http://upload-images.jianshu.io/upload_images/2730963-a331a4a527a174e2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)具体来说，下载图片的链接在这个标签里：![屏幕快照.png](http://upload-images.jianshu.io/upload_images/2730963-3c90f4ef27dd2181.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)是在<dl class = "show-list-dl aside-box">这一标签下的img标签里。知道大概的位置，我们就可以用正则表达式和BeautifulSoup来找到这个链接：
+#解析网页
+def parse(html):
+    soup = BeautifulSoup(html,features = 'lxml')
+    urls = soup.find_all('a',{'href':re.compile('^/.*?/$')})
+    title = soup.find('h1').get_text().strip()
+    page_urls = set([urljoin(base_url,url['href']) for url in urls])
+    #这个url是现在所爬取的网页的url
+    url = soup.find('meta',{'property':"og:url"})['content']
+    return title,page_urls,url
 ```
-img_ul = soup.find_all('dl',{'class':'show-list-dl aside-box'})
-for ul in img_ul:
-    imgs = ul.find_all('img',{'src':re.compile("^http://")})
-    for img in imgs:
-        url = img['src']
+因为爬虫是不断打开网页上的URL，在不同的网页上可能存在相同的网页链接，为了避免重复爬取，我们需要记录一下哪些网站是爬取过的，哪些网站是没有爬取的。
 ```
-* 下载图片
-找到url以后，就可以利用request的get方法下载图片了，我们这里采用了分块下载的方法，也就是说，下载一部分内容，保存一部分内容：
+#分别代表未爬取和已爬取的网页
+unseen = set([base_url,])
+seen = set()
 ```
-       r = requests.get(url, stream=True)
-        image_name = url.split('/')[-1]
-        with open('./img/%s' % image_name, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=128):
-                f.write(chunk)
-        print('Saved %s' % image_name)
+做好这些准备工作，我们就可以准备让我们的爬虫开始工作了。这里我们采用了Pool（进程池）来并行“打开网页”和“解析网页”这两项工作。
 ```
-然后运行就可以得到图片了：
-![屏幕快照 .png](http://upload-images.jianshu.io/upload_images/2730963-a47c9a0de659be83.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)![屏幕快照 .png](http://upload-images.jianshu.io/upload_images/2730963-57314726b92eaba1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+#使用多进程进行爬虫来爬取网页
+pool = mp.Pool(4)#创建4个进程池
+count ,t1=1,time.time()
+if base_url!='http://127.0.0.1:4000/':
+    restricted = True
+else:
+    restricted = False
+while len(unseen)!=0:
+    # if restricted_crawl and len(seen) > 20:
+    #         break
+    crawl_jobs = [pool.apply_async(crawl, args=(url,)) for url in unseen]
+    htmls = [j.get() for j in crawl_jobs]                                       # request connection
+    parse_jobs = [pool.apply_async(parse, args=(html,)) for html in htmls]
+    results = [j.get() for j in parse_jobs]                                     # parse html
+    seen.update(unseen)         # seen the crawled
+    unseen.clear()              # nothing unseen
 
-希望大家都可以爬到好看的图～完整代码见[我的github](https://github.com/GreenGitHuber/Web/blob/master/crawler/ex_down_image.py)咯 :D
+    for title, page_urls, url in results:
+        print(count, title, url)
+        count += 1
+        unseen.update(page_urls - seen)     # get new url to crawl
+print('Total time: %.1f s' % (time.time()-t1, ))
+```
+以上就是一个简单的多进程分布式爬虫的实现。
+    多进程分布式的爬虫是通过利用计算机开辟多个进程来并行一些操作，从而使得运算速度加快。下面我们要介绍的是通过单线程就可以实现爬虫加速的效果，是不是感觉很神奇。不过在这之前，我们最好要了解一下python中[协程](https://www.jianshu.com/p/4e6f758d4b3f)的概念。
+ Python 提供了一个有力的工具, 叫做 [asyncio](https://docs.python.org/3/library/asyncio.html). 这是一个仅仅使用单线程, 就能达到多线程/进程的效果的工具. 它的原理, 简单说就是: **在单线程里使用异步计算, 下载网页的时候和处理网页的时候是不连续的, 更有效利用了等待下载的这段时间.** Python 官方解释 asyncio 的图([来源](https://docs.python.org/3/library/asyncio-task.html)), 稍微复杂一点。![image](http://upload-images.jianshu.io/upload_images/2730963-07399a06f4d7745e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)我觉得这幅图图更好理解一点：![image](http://upload-images.jianshu.io/upload_images/2730963-0750b6bf6cac156e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)传统的单线程下载处理网页可能就像上图图([来源](https://www.nginx.com/blog/thread-pools-boost-performance-9x/))左边蓝色那样, 计算机执行一些代码, 然后等待下载网页, 下好以后, 再执行一些代码… 或者在等待的时候, 用另外一个线程执行其他的代码, 这是多线程的手段. 那么 asyncio 就像右边, 只使用一个线程, 但是将这些等待时间统统掐掉, 下载应该都调到了后台, 这个时间里, 执行其他异步的功能, 下载好了之后, 再调回来接着往下执行。所以我们今天就来尝试使用 asyncio 来替换掉 multiprocessing 或者 threading, 看看效果如何。
+##### 异步加载
+在将asyncio应用于爬虫加速之前，我们先来了解一下asyncio库大概的用法，利用下面这个程序来热个身：
+```
+#不是异步的情况
+import time
 
+def job(t):
+print('Start job',t)
+time.sleep(t)
+print('job takes ',t,'s')
+t1 = time.time()
+[job(t) for t in range(1,4)]
+print("NO async total time : ", time.time() - t1)
+```
+同样的程序，用 asyncio来做：
+```
+import asyncio
 
+async def job(t):
+    print('Start job',t)
+    await asyncio.sleep(t)
+    print('job takes ',t,'s')
+    
+async def main(loop):
+    tasks = [loop.create_task(job(t)) for t in range(1,4)]#1
+    await asyncio.wait(tasks)
 
+t1 = time.time()
+loop = asyncio.get_event_loop() #建立loop
+loop.run_until_complete(main(loop))
+loop.close()
+print("Async total time:",time.time()-t1
+```
+运行结果是：
+```
+Start job 1
+Start job 2
+Start job 3
+job takes  1 s
+job takes  2 s
+job takes  3 s
+Async total time: 3.0082571506500244
+```
+可以看出使用异步IO可以确实加快了速度。那使用我们之前的进程池（多进程）效果会是什么样子的呢？
+```
+#使用进程池来做
+import multiprocessing as mp 
+def job(t):
+    print('Start job',t)
+    time.sleep(t)
+    print('job takes ',t,'s')
+def main():
+    t1 = time.time()
+    pool = mp.Pool(4)
+    res = pool.map(job,range(1,4))#1
+    print("Async total time:",time.time()-t1)
+if __name__ == '__main__':
+    main()
+```
+运行结果如下：
+```
+Start job 2
+Start job 1
+Start job 3
+job takes  1 s
+job takes  2 s
+job takes  3 s
+Async total time: 3.022818088531494
+```
+看来asyncio确实可以仅仅使用一个单线程, 就能达到多线程/进程的效果。好奇的我就想把任务数加多，超过进程池的数量（4个）。修改了程序中(#1处)的任务数，改为range(1,8),运行程序得到这样的结果：![屏幕快照](http://upload-images.jianshu.io/upload_images/2730963-bdf6385b756a76f1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)上面一部分15S的是使用进程池花费的时间，下面这一部分9秒是使用asyncio（异步io）花费的时间。单线程的效率竟然超过了多进程。
+不过不同的情况结果也不同，只能说对于IO频繁的程序，异步IO确实可以提高效率。
+有了这个背景以后，我们就可以用asyncio加速我们的爬虫。使用asyncio还要配合使用aiohttp。我们需要安装另一个牛逼的模块将 `requests` 模块代替成一个异步的 `requests`, 这个牛逼的模块叫作 `aiohttp` ([官网在这](https://aiohttp.readthedocs.io/en/stable/index.html)). 下载安装特别简单. 直接在你的 terminal 或者 cmd 里面输入 “pip3 install aiohttp”
+那使用`asyncio`和`aiohttp`以后的爬虫是一个什么样子的结构呢？又要盗图了-_-#
+![image](http://upload-images.jianshu.io/upload_images/2730963-7c815e57ac1b6e70.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+可以看到，相比于分布式爬虫，我们只是把打开网页这一步进行了异步操作。而对于计算密集型的解析网页的操作，还是使用了原来的多进程并行操作。
+具体代码如下：
+```
+def parse(html):
+    soup = BeautifulSoup(html, 'lxml')
+    urls = soup.find_all('a', {"href": re.compile('^/.+?/$')})
+    title = soup.find('h1').get_text().strip()
+    page_urls = set([urljoin(base_url, url['href']) for url in urls])
+    url = soup.find('meta', {'property': "og:url"})['content']
+    return title, page_urls, url
+async def crawl(url,session):
+    r =await session.get(url)
+    html = await r.text()
+    return html
 
+async def main(loop):
+    pool = mp.Pool(8)
+    async with aiohttp.ClientSession() as session:
+        count = 1
+        while len(unseen) != 0:
+            print('\nAsync Crawling...')
+            tasks = [loop.create_task(crawl(url, session)) for url in unseen]
+            finished, unfinished = await asyncio.wait(tasks)
+            htmls = [f.result() for f in finished]
+            
+            print('\nDistributed Parsing...')
+            parse_jobs = [pool.apply_async(parse, args=(html,)) for html in htmls]
+            results = [j.get() for j in parse_jobs]
+            
+            print('\nAnalysing...')
+            seen.update(unseen)
+            unseen.clear()
+            for title, page_urls, url in results:
+                print(count, title, url)
+                unseen.update(page_urls - seen)
+                count += 1
+
+if __name__ == "__main__":
+    t1 = time.time()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main(loop))
+    loop.close()
+    print("Async total time: ", time.time() - t1)
+```
+运行结果是：![截图](http://upload-images.jianshu.io/upload_images/2730963-b2ce634d2a6b2bf7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+完整代码见[我的github](https://github.com/GreenGitHuber/Web/blob/master/crawler/async_crawler.py) :D
